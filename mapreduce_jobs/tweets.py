@@ -59,6 +59,16 @@ class Tweets(MRJob):
 
             return tweet_object
 
+    @staticmethod
+    def _clean_word(word):
+        if not Tweets._is_hashtag(word):
+            results = re.findall('[a-z]*', word)
+
+            if not not results:
+                word = results[0]
+
+        return word
+
     def mapper(self, _, line):
         tweet_object = Tweets._filter_tweets(line)
 
@@ -67,10 +77,12 @@ class Tweets(MRJob):
             usa_state = tweet_object['usa_state']
 
             for word in text.split():
-                yield(usa_state, self._eval_word(word))
+                cleaned_word = Tweets._clean_word(word)
 
-            if Tweets._is_hashtag(word):
-                yield(word, 1)
+                yield(usa_state, self._eval_word(cleaned_word))
+
+                if Tweets._is_hashtag(word):
+                    yield(word, 1)
 
     def combiner(self, key, value):
         yield(key, sum(value))
