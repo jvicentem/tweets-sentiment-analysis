@@ -61,11 +61,10 @@ class Tweets(MRJob):
 
     @staticmethod
     def _clean_word(word):
-        if not Tweets._is_hashtag(word):
-            results = re.findall('[a-z]*', word)
+        results = re.findall('^#?[a-zA-Z_]*', word)
 
-            if not not results:
-                word = results[0]
+        if len(results) > 0:
+            word = results[0].lower()
 
         return word
 
@@ -81,8 +80,8 @@ class Tweets(MRJob):
 
                 yield(usa_state, self._eval_word(cleaned_word))
 
-                if Tweets._is_hashtag(word):
-                    yield(word, 1)
+                if Tweets._is_hashtag(cleaned_word):
+                    yield(cleaned_word, 1)
 
     def combiner(self, key, value):
         yield(key, sum(value))
