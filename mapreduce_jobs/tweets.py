@@ -27,6 +27,10 @@ class Tweets(MRJob):
         else:
             return 0
 
+    @staticmethod
+    def _is_hashtag(word):
+        return word.startswith('#')
+
     def mapper(self, _, line):
         try:
             tweet_object = ujson.loads(line.strip())
@@ -37,7 +41,7 @@ class Tweets(MRJob):
             for word in text.split():
                 yield(usa_state, self._eval_word(word))
 
-            if word.startswith('#'):
+            if Tweets._is_hashtag(word):
                 yield(word, 1)
         except ValueError:
             logging.warning('JSON malformed')
@@ -48,7 +52,7 @@ class Tweets(MRJob):
     def reducer(self, key, value):
         value_key_tuple = (sum(value), key)
 
-        if not key.startswith('#'):
+        if not Tweets._is_hashtag(key):
             print(value_key_tuple)
 
         yield(None, value_key_tuple)
@@ -56,17 +60,17 @@ class Tweets(MRJob):
     def happiest_state(self, _, value_key_tuples):
         tuples_list = list(value_key_tuples)
 
-        original_tuples_list_copy = list(tuples_list)
+        states = []
 
         for tuple in tuples_list:
-            if tuple[1].startswith('#'):
-                tuples_list.remove(tuple)
+            if not Tweets._is_hashtag(tuple[1]):
+                states.append(tuple)
 
-        tuples_list.sort(key=itemgetter(0), reverse=True)
+        states.sort(key=itemgetter(0), reverse=True)
 
-        print(tuples_list[0])
+        print(states[0])
 
-        for value_key_tuple in original_tuples_list_copy:
+        for value_key_tuple in tuples_list:
             yield(None, value_key_tuple)
 
     def top_10_hashtags(self, _, value_key_tuples):
@@ -75,14 +79,13 @@ class Tweets(MRJob):
         hashtags = []
 
         for tuple in tuples_list:
-            if tuple[1].startswith('#'):
+            if Tweets._is_hashtag(tuple[1]):
                 hashtags.append(tuple)
 
         hashtags.sort(key=itemgetter(0), reverse=True)
 
         for hashtag in hashtags[:10]:
             print(hashtag)
-
 
     def steps(self):
         return [MRStep(mapper_init=self.mapper_init,
