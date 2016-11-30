@@ -34,17 +34,18 @@ class Tweets(MRJob):
     def mapper(self, _, line):
         try:
             tweet_object = ujson.loads(line.strip())
-
-            text = tweet_object['text']
-            usa_state = tweet_object['usa_state']
-
-            for word in text.split():
-                yield(usa_state, self._eval_word(word))
-
-            if Tweets._is_hashtag(word):
-                yield(word, 1)
         except ValueError:
             logging.warning('JSON malformed')
+            return
+
+        text = tweet_object['text']
+        usa_state = tweet_object['usa_state']
+
+        for word in text.split():
+            yield(usa_state, self._eval_word(word))
+
+        if Tweets._is_hashtag(word):
+            yield(word, 1)
 
     def combiner(self, key, value):
         yield(key, sum(value))
