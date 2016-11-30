@@ -109,7 +109,8 @@ def print_tweet(tweet_json, db):
     db.tweets_collection.insert_one(tweet_json)
 
 '''
-This is the method which actually retrieves tweets and filters them only getting those that were posted in English and from USA.
+This is the method which actually retrieves tweets and filters them only getting those that were posted in English and
+from USA.
 '''
 def fetchsamples(db):
     query_coords_string = '-155.6811,18.91,-66.9470,44.81'
