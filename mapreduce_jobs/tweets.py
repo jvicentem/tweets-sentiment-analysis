@@ -5,6 +5,8 @@ import sys
 import os
 import logging
 from operator import itemgetter
+import re
+import us
 
 sys.path.append(os.path.abspath('..'))
 
@@ -31,21 +33,44 @@ class Tweets(MRJob):
     def _is_hashtag(word):
         return word.startswith('#')
 
-    def mapper(self, _, line):
+    @staticmethod
+    def _filter_tweets(line):
         try:
             tweet_object = ujson.loads(line.strip())
         except ValueError:
             logging.warning('JSON malformed')
             return
 
-        text = tweet_object['text']
-        usa_state = tweet_object['usa_state']
+        if tweet_object['lang'] == 'en':
+            if 'usa_state' not in tweet_object:
+                if 'place' in tweet_object and tweet_object['place']['country_code'] == 'US':
+                    full_name = tweet_object['place']['full_name']
 
-        for word in text.split():
-            yield(usa_state, self._eval_word(word))
+                    matches = re.findall('([\w+\s]+)', full_name)
 
-        if Tweets._is_hashtag(word):
-            yield(word, 1)
+                    if len(matches) is 2:
+                        if matches[1] == 'USA':
+                            tweet_object['usa_state'] = matches[0]
+                        else:
+                            # Find state full name for abbreviation:
+                            tweet_object['usa_state'] = str(us.states.lookup(matches[1][1:]))
+                else:
+                    tweet_object = None
+
+            return tweet_object
+
+    def mapper(self, _, line):
+        tweet_object = Tweets._filter_tweets(line)
+
+        if tweet_object is not None:
+            text = tweet_object['text']
+            usa_state = tweet_object['usa_state']
+
+            for word in text.split():
+                yield(usa_state, self._eval_word(word))
+
+            if Tweets._is_hashtag(word):
+                yield(word, 1)
 
     def combiner(self, key, value):
         yield(key, sum(value))
