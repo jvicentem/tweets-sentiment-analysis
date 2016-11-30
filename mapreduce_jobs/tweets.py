@@ -53,35 +53,35 @@ class Tweets(MRJob):
 
         yield(None, value_key_tuple)
 
-    def happiest_state(self, _, value_key_tuple):
-        liste = list(value_key_tuple)
+    def happiest_state(self, _, value_key_tuples):
+        tuples_list = list(value_key_tuples)
 
-        liste2 = list(liste)
+        original_tuples_list_copy = list(tuples_list)
 
-        for x in liste:
-            if x[1].startswith('#'):
-                liste.remove(x)
+        for tuple in tuples_list:
+            if tuple[1].startswith('#'):
+                tuples_list.remove(tuple)
 
-        liste.sort(key=itemgetter(0), reverse=True)
+        tuples_list.sort(key=itemgetter(0), reverse=True)
 
-        print(liste[0])
+        print(tuples_list[0])
 
-        for i in liste2:
-            yield(None, i)
+        for value_key_tuple in original_tuples_list_copy:
+            yield(None, value_key_tuple)
 
-    def reducer_hashtag(self, _, value_key_tuple):
-        liste = list(value_key_tuple)
+    def top_10_hashtags(self, _, value_key_tuples):
+        tuples_list = list(value_key_tuples)
 
-        liste3 = []
+        hashtags = []
 
-        for x in liste:
-            if x[1].startswith('#'):
-                liste3.append(x)
+        for tuple in tuples_list:
+            if tuple[1].startswith('#'):
+                hashtags.append(tuple)
 
-        liste3.sort(key=itemgetter(0), reverse=True)
+        hashtags.sort(key=itemgetter(0), reverse=True)
 
-        for i in liste3[:10]:
-            print(i)
+        for hashtag in hashtags[:10]:
+            print(hashtag)
 
 
     def steps(self):
@@ -91,7 +91,7 @@ class Tweets(MRJob):
                        reducer=self.reducer
                        ),
                 MRStep(reducer=self.happiest_state),
-                MRStep(reducer=self.reducer_hashtag)
+                MRStep(reducer=self.top_10_hashtags)
                 ]
 
 if __name__ == '__main__':
