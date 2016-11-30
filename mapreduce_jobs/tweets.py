@@ -4,6 +4,7 @@ import ujson
 import sys
 import os
 import logging
+from operator import itemgetter
 
 sys.path.append(os.path.abspath('..'))
 
@@ -36,21 +37,52 @@ class Tweets(MRJob):
             for word in text.split():
                 yield(usa_state, self._eval_word(word))
 
-            #    if word.startswith('#'):
-            #        yield(word, 1)
+            if word.startswith('#'):
+                yield(word, 1)
         except ValueError:
             logging.warning('JSON malformed')
 
-    def combiner(self, usa_state, word_score):
-        yield(usa_state, sum(word_score))
+    def combiner(self, key, value):
+        yield(key, sum(value))
 
-    def reducer(self, usa_state, state_score):
-        state_score_tuple = (sum(state_score), usa_state)
-        print(state_score_tuple)
-        yield(None, state_score_tuple)
+    def reducer(self, key, value):
+        value_key_tuple = (sum(value), key)
 
-    def happiest_state(self, _, state_score_tuple):
-        yield max(state_score_tuple)
+        if not key.startswith('#'):
+            print(value_key_tuple)
+
+        yield(None, value_key_tuple)
+
+    def happiest_state(self, _, value_key_tuple):
+        liste = list(value_key_tuple)
+
+        liste2 = list(liste)
+
+        for x in liste:
+            if x[1].startswith('#'):
+                liste.remove(x)
+
+        liste.sort(key=itemgetter(0), reverse=True)
+
+        print(liste[0])
+
+        for i in liste2:
+            yield(None, i)
+
+    def reducer_hashtag(self, _, value_key_tuple):
+        liste = list(value_key_tuple)
+
+        liste3 = []
+
+        for x in liste:
+            if x[1].startswith('#'):
+                liste3.append(x)
+
+        liste3.sort(key=itemgetter(0), reverse=True)
+
+        for i in liste3[:10]:
+            print(i)
+
 
     def steps(self):
         return [MRStep(mapper_init=self.mapper_init,
@@ -58,8 +90,9 @@ class Tweets(MRJob):
                        combiner=self.combiner,
                        reducer=self.reducer
                        ),
-                MRStep(reducer=self.happiest_state)
+                MRStep(reducer=self.happiest_state),
+                MRStep(reducer=self.reducer_hashtag)
                 ]
 
 if __name__ == '__main__':
-    print(Tweets.run())
+    Tweets.run()
