@@ -8,12 +8,11 @@ import reverse_geocoder as rg
 import us
 from pymongo import MongoClient
 
-# See Assignment 1 instructions or README for how to get these credentials
-access_token_key = '797489270298701825-ady3jrqiWwGi6LcWW1s7MDMmXTLq7yy'
-access_token_secret = 'OkNNW3fFkwg7pvlB92nduO4SyCv3pP9YakBFjAQeVABGb'
+access_token_key = ''
+access_token_secret = ''
 
-consumer_key = 'AYQIH8eOFTaSj2oimhAO2ZWYP'
-consumer_secret = 'qL0axbOqRdHg4cTwfSkS1uzOg8QoF80QwK94M3mYLobXnA9IUg'
+consumer_key = ''
+consumer_secret = ''
 
 _debug = 0
 
@@ -96,7 +95,9 @@ def remove_fields(tweet_dict):
 
     return tweet_dict
 
-
+'''
+Prints tweet and inserts it into the db
+'''
 def print_tweet(tweet_json, db):
     user_name = tweet_json['user']['name']
     tweet_id = str(tweet_json['id'])
@@ -109,7 +110,9 @@ def print_tweet(tweet_json, db):
     # now let's save the tweet
     db.tweets_collection.insert_one(tweet_json)
 
-
+'''
+This is the method which actually retrieves tweets and filters them only getting those that were posted in English and from USA.
+'''
 def fetchsamples(db):
     query_coords_string = '-155.6811,18.91,-66.9470,44.81'
 
