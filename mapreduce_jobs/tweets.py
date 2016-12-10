@@ -8,7 +8,7 @@ from operator import itemgetter
 import re
 import us
 
-sys.path.append(os.path.abspath('..'))
+#sys.path.append(os.path.abspath('..'))
 
 
 class Tweets(MRJob):
@@ -17,7 +17,8 @@ class Tweets(MRJob):
     WORDS_LIST = {}
 
     def mapper_init(self):
-        words_file = open(sys.path[-1] + os.path.sep + './assets/AFINN-en-165.txt')
+        #words_file = open(sys.path[-1] + os.path.sep + './assets/AFINN-en-165.txt')
+        words_file = open('./AFINN-en-165.txt')
 
         for line in words_file:
             word, score = line.split('\t')
@@ -89,8 +90,8 @@ class Tweets(MRJob):
     def reducer(self, key, value):
         value_key_tuple = (sum(value), key)
 
-        if not Tweets._is_hashtag(key):
-            print(value_key_tuple)
+        #if not Tweets._is_hashtag(key):
+        #    print(value_key_tuple)
 
         yield(None, value_key_tuple)
 
@@ -130,8 +131,8 @@ class Tweets(MRJob):
                        combiner=self.combiner,
                        reducer=self.reducer
                        ),
-                MRStep(reducer=self.happiest_state),
-                MRStep(reducer=self.top_10_hashtags)
+                MRStep(reducer=self.happiest_state)#,
+                #MRStep(reducer=self.top_10_hashtags)
                 ]
 
 if __name__ == '__main__':
