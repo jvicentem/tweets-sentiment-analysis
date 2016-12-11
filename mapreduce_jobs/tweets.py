@@ -1,14 +1,10 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import ujson
-import sys
-import os
 import logging
 from operator import itemgetter
 import re
 import us
-
-#sys.path.append(os.path.abspath('..'))
 
 
 class Tweets(MRJob):
@@ -17,7 +13,6 @@ class Tweets(MRJob):
     WORDS_LIST = {}
 
     def mapper_init(self):
-        #words_file = open(sys.path[-1] + os.path.sep + './assets/AFINN-en-165.txt')
         words_file = open('./AFINN-en-165.txt')
 
         for line in words_file:
@@ -102,9 +97,6 @@ class Tweets(MRJob):
                 states.append(tuple)
 
         states.sort(key=itemgetter(0), reverse=True)
-
-        #print('null\t[' + str(states[0][0]) + ', "' + str(states[0][1]) + '"]')
-        #print(str(states[0]))
 
         for value_key_tuple in tuples_list:
             yield(None, value_key_tuple)
