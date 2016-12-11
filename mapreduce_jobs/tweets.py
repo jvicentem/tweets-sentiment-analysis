@@ -1,14 +1,10 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import ujson
-import sys
-import os
 import logging
 from operator import itemgetter
 import re
 import us
-
-sys.path.append(os.path.abspath('..'))
 
 
 class Tweets(MRJob):
@@ -17,7 +13,7 @@ class Tweets(MRJob):
     WORDS_LIST = {}
 
     def mapper_init(self):
-        words_file = open(sys.path[-1] + os.path.sep + './assets/AFINN-en-165.txt')
+        words_file = open('./AFINN-en-165.txt')
 
         for line in words_file:
             word, score = line.split('\t')
@@ -89,9 +85,6 @@ class Tweets(MRJob):
     def reducer(self, key, value):
         value_key_tuple = (sum(value), key)
 
-        if not Tweets._is_hashtag(key):
-            print(value_key_tuple)
-
         yield(None, value_key_tuple)
 
     def happiest_state(self, _, value_key_tuples):
@@ -105,24 +98,31 @@ class Tweets(MRJob):
 
         states.sort(key=itemgetter(0), reverse=True)
 
-        print(states[0])
-
         for value_key_tuple in tuples_list:
             yield(None, value_key_tuple)
+
+        yield(None, (states[0][0], states[0][1], 'happiest_state'))
 
     def top_10_hashtags(self, _, value_key_tuples):
         tuples_list = list(value_key_tuples)
 
         hashtags = []
 
-        for tuple in tuples_list:
-            if Tweets._is_hashtag(tuple[1]):
-                hashtags.append(tuple)
+        happiest_state = None
+
+        for tup in tuples_list:
+            if tup is not None:
+                if Tweets._is_hashtag(tup[1]):
+                    hashtags.append(tup)
+                elif len(tup) == 3 and tup[2] == 'happiest_state':
+                    happiest_state = tup
 
         hashtags.sort(key=itemgetter(0), reverse=True)
 
         for hashtag in hashtags[:10]:
             print(hashtag)
+
+        print(happiest_state)
 
     def steps(self):
         return [MRStep(mapper_init=self.mapper_init,
@@ -132,7 +132,7 @@ class Tweets(MRJob):
                        ),
                 MRStep(reducer=self.happiest_state),
                 MRStep(reducer=self.top_10_hashtags)
-                ]
+               ]
 
 if __name__ == '__main__':
     Tweets.run()
