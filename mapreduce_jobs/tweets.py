@@ -93,10 +93,9 @@ class Tweets(MRJob):
     def happiest_state_and_top_10_hashtags(self, state_or_hashtag_string_key, value_key_tuples):
         tuples_list = list(value_key_tuples)
 
-        hashtags = []
-        states = []
-
         if state_or_hashtag_string_key == 'hashtag':
+            hashtags = []
+
             for tup in tuples_list:
                 if tup is not None and Tweets._is_hashtag(tup[1]):
                     hashtags.append(tup)
@@ -106,6 +105,8 @@ class Tweets(MRJob):
             for hashtag in hashtags[:10]:
                 print(hashtag)
         elif state_or_hashtag_string_key == 'state':
+            states = []
+
             for tup in tuples_list:
                 if tup is not None and not Tweets._is_hashtag(tup[1]):
                     states.append(tup)
