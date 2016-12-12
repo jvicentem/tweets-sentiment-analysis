@@ -1,14 +1,10 @@
 from mrjob.job import MRJob
 from mrjob.step import MRStep
 import ujson
-import sys
-import os
 import logging
 from operator import itemgetter
 import re
 import us
-
-sys.path.append(os.path.abspath('..'))
 
 
 class Tweets(MRJob):
@@ -17,7 +13,7 @@ class Tweets(MRJob):
     WORDS_LIST = {}
 
     def mapper_init(self):
-        words_file = open(sys.path[-1] + os.path.sep + './assets/AFINN-en-165.txt')
+        words_file = open('./AFINN-en-165.txt')
 
         for line in words_file:
             word, score = line.split('\t')
@@ -89,40 +85,35 @@ class Tweets(MRJob):
     def reducer(self, key, value):
         value_key_tuple = (sum(value), key)
 
-        if not Tweets._is_hashtag(key):
-            print(value_key_tuple)
+        if Tweets._is_hashtag(key):
+            yield('hashtag', value_key_tuple)
+        else:
+            yield('state', value_key_tuple)
 
-        yield(None, value_key_tuple)
-
-    def happiest_state(self, _, value_key_tuples):
+    def happiest_state_and_top_10_hashtags(self, state_or_hashtag_string_key, value_key_tuples):
         tuples_list = list(value_key_tuples)
 
-        states = []
+        if state_or_hashtag_string_key == 'hashtag':
+            hashtags = []
 
-        for tuple in tuples_list:
-            if not Tweets._is_hashtag(tuple[1]):
-                states.append(tuple)
+            for tup in tuples_list:
+                if tup is not None and Tweets._is_hashtag(tup[1]):
+                    hashtags.append(tup)
 
-        states.sort(key=itemgetter(0), reverse=True)
+            hashtags.sort(key=itemgetter(0), reverse=True)
 
-        print(states[0])
+            for hashtag in hashtags[:10]:
+                print(hashtag)
+        elif state_or_hashtag_string_key == 'state':
+            states = []
 
-        for value_key_tuple in tuples_list:
-            yield(None, value_key_tuple)
+            for tup in tuples_list:
+                if tup is not None and not Tweets._is_hashtag(tup[1]):
+                    states.append(tup)
 
-    def top_10_hashtags(self, _, value_key_tuples):
-        tuples_list = list(value_key_tuples)
+            states.sort(key=itemgetter(0), reverse=True)
 
-        hashtags = []
-
-        for tuple in tuples_list:
-            if Tweets._is_hashtag(tuple[1]):
-                hashtags.append(tuple)
-
-        hashtags.sort(key=itemgetter(0), reverse=True)
-
-        for hashtag in hashtags[:10]:
-            print(hashtag)
+            print(states[0])
 
     def steps(self):
         return [MRStep(mapper_init=self.mapper_init,
@@ -130,9 +121,8 @@ class Tweets(MRJob):
                        combiner=self.combiner,
                        reducer=self.reducer
                        ),
-                MRStep(reducer=self.happiest_state),
-                MRStep(reducer=self.top_10_hashtags)
-                ]
+                MRStep(reducer=self.happiest_state_and_top_10_hashtags)
+               ]
 
 if __name__ == '__main__':
     Tweets.run()
