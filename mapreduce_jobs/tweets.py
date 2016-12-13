@@ -19,6 +19,8 @@ class Tweets(MRJob):
             word, score = line.split('\t')
             self.WORDS_LIST[word] = int(score)
 
+        words_file.close()
+
     def _eval_word(self, word):
         if word in self.WORDS_LIST:
             return self.WORDS_LIST[word]
