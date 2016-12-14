@@ -21,12 +21,12 @@ shp_info = m.readshapefile('st99_d00','states',drawbounds=True)
 
 
 happiness = dict()
-file = open("emaitzak2")
+file = open("happiness")
 lines = file.readlines()
 lines = lines[:-11]
 for linea in lines:
     state, hap = linea.split("\t")
-    happiness[state] = int(hap)
+    happiness[state.replace('"','')] = int(hap)
 
 # choose a color for each state based on population density.
 colors={}
