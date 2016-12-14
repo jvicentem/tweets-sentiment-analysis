@@ -118,17 +118,18 @@ class Tweets(MRJob):
             hashtags.sort(key=itemgetter(0), reverse=True)
 
             for hashtag in hashtags[:10]:
-                print(hashtag)
+                yield(hashtag[1],hashtag[0])
         elif state_or_hashtag_string_key == 'state':
             states = []
 
             for tup in tuples_list:
                 if tup is not None and not word_utils.is_hashtag(tup[1]):
                     states.append(tup)
+                    yield(tup[1],tup[0])
 
             states.sort(key=itemgetter(0), reverse=True)
-
-            print(states[0])
+			
+            yield(states[0][1],states[0][0])
 
     def steps(self):
         return [MRStep(mapper_init=self.mapper_init,
