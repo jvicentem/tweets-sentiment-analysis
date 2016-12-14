@@ -3,12 +3,11 @@ from mrjob.step import MRStep
 import ujson
 import logging
 from operator import itemgetter
+import word_utils
 import ssl
+
 if hasattr(ssl, '_create_unverified_context'):
     ssl._create_default_https_context = ssl._create_unverified_context
-
-
-import word_utils
 
 
 class Tweets(MRJob):
@@ -128,7 +127,7 @@ class Tweets(MRJob):
                     yield(tup[1],tup[0])
 
             states.sort(key=itemgetter(0), reverse=True)
-			
+
             yield(states[0][1],states[0][0])
 
     def steps(self):
