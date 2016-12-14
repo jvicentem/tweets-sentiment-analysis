@@ -3,68 +3,73 @@ from mrjob.step import MRStep
 import ujson
 import logging
 from operator import itemgetter
-import re
-import us
+
+import word_utils
 
 
 class Tweets(MRJob):
     MRJob.SORT_VALUES = True
 
-    WORDS_LIST = {}
+    WORDS_DICT = {}
 
     def mapper_init(self):
-        words_file = open('./AFINN-en-165.txt')
+        self.WORDS_DICT = word_utils.words_score_dict()
 
-        for line in words_file:
-            word, score = line.split('\t')
-            self.WORDS_LIST[word] = int(score)
-
-        words_file.close()
-
+    '''
+    Returns a value for a word.
+    If the word is not included in the dictionary, then the value is 0.
+    '''
     def _eval_word(self, word):
-        if word in self.WORDS_LIST:
-            return self.WORDS_LIST[word]
+        if word in self.WORDS_DICT:
+            return self.WORDS_DICT[word]
         else:
             return 0
 
+    '''
+    Returns true if field is a key of dictionary and the value of that key is not None.
+    '''
     @staticmethod
-    def _is_hashtag(word):
-        return word.startswith('#')
+    def _field_in_dict(dictionary, field):
+        return dictionary is not None and field in dictionary and dictionary[field] is not None
 
+    '''
+    Given a string, returns a filtered object that represents a Tweet.
+
+    It will return None unless the tweet is written in English and its location
+    belongs to the United States (there must be info about the state in tweet['place']['full_name']
+    or tweet['user']['location']).
+    '''
     @staticmethod
     def _filter_tweets(line):
         try:
             tweet_object = ujson.loads(line.strip())
         except ValueError:
             logging.warning('JSON malformed')
-            return
+            return None
 
-        if tweet_object['lang'] == 'en':
+        if Tweets._field_in_dict(tweet_object, 'lang') and tweet_object['lang'] == 'en':
             if 'usa_state' not in tweet_object:
-                if 'place' in tweet_object and tweet_object['place']['country_code'] == 'US':
-                    full_name = tweet_object['place']['full_name']
+                place_exists = Tweets._field_in_dict(tweet_object, 'place')
+                country_code_exists = Tweets._field_in_dict(tweet_object['place'], 'country_code')
 
-                    matches = re.findall('([\w+\s]+)', full_name)
+                if place_exists and country_code_exists and tweet_object['place']['country_code'] == 'US':
+                    place_full_name = tweet_object['place']['full_name']
 
-                    if len(matches) is 2:
-                        if matches[1] == 'USA':
-                            tweet_object['usa_state'] = matches[0]
-                        else:
-                            # Find state full name for abbreviation:
-                            tweet_object['usa_state'] = str(us.states.lookup(matches[1][1:]))
+                elif (Tweets._field_in_dict(tweet_object, 'user') and
+                        Tweets._field_in_dict(tweet_object['user'], 'location')):
+
+                    place_full_name = tweet_object['user']['location']
                 else:
-                    tweet_object = None
+                    return None
+
+                possible_state = word_utils.find_usa_state(place_full_name)
+
+                if possible_state is not None:
+                    tweet_object['usa_state'] = word_utils.find_usa_state(place_full_name)
+                else:
+                    return None
 
             return tweet_object
-
-    @staticmethod
-    def _clean_word(word):
-        results = re.findall('^#?[a-zA-Z_]*', word)
-
-        if len(results) > 0:
-            word = results[0].lower()
-
-        return word
 
     def mapper(self, _, line):
         tweet_object = Tweets._filter_tweets(line)
@@ -74,11 +79,11 @@ class Tweets(MRJob):
             usa_state = tweet_object['usa_state']
 
             for word in text.split():
-                cleaned_word = Tweets._clean_word(word)
+                cleaned_word = word_utils.clean_word(word)
 
                 yield(usa_state, self._eval_word(cleaned_word))
 
-                if Tweets._is_hashtag(cleaned_word):
+                if word_utils.is_hashtag(cleaned_word):
                     yield(cleaned_word, 1)
 
     def combiner(self, key, value):
@@ -87,11 +92,15 @@ class Tweets(MRJob):
     def reducer(self, key, value):
         value_key_tuple = (sum(value), key)
 
-        if Tweets._is_hashtag(key):
+        if word_utils.is_hashtag(key):
             yield('hashtag', value_key_tuple)
         else:
             yield('state', value_key_tuple)
 
+    '''
+    This method will act as a second reducer and it returns the top 10 hashtags
+    and the happiest state in USA.
+    '''
     def happiest_state_and_top_10_hashtags(self, state_or_hashtag_string_key, value_key_tuples):
         tuples_list = list(value_key_tuples)
 
@@ -99,7 +108,7 @@ class Tweets(MRJob):
             hashtags = []
 
             for tup in tuples_list:
-                if tup is not None and Tweets._is_hashtag(tup[1]):
+                if tup is not None and word_utils.is_hashtag(tup[1]):
                     hashtags.append(tup)
 
             hashtags.sort(key=itemgetter(0), reverse=True)
@@ -110,7 +119,7 @@ class Tweets(MRJob):
             states = []
 
             for tup in tuples_list:
-                if tup is not None and not Tweets._is_hashtag(tup[1]):
+                if tup is not None and not word_utils.is_hashtag(tup[1]):
                     states.append(tup)
 
             states.sort(key=itemgetter(0), reverse=True)
@@ -124,7 +133,7 @@ class Tweets(MRJob):
                        reducer=self.reducer
                        ),
                 MRStep(reducer=self.happiest_state_and_top_10_hashtags)
-               ]
+                ]
 
 if __name__ == '__main__':
     Tweets.run()
