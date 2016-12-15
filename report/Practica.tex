@@ -27,9 +27,11 @@
 \setlength{\oddsidemargin}{\margen}
 \setlength{\evensidemargin}{\margen}
 
+\usepackage{hyperref}
+
 
 \title{Sistemas Distribuidos de Procesamiento de Datos\\Práctica Hadoop}
-\author{José Vicente Mellado \\ Jon Kobeaga Urriolabeitia\\Universidad Rey Juan Carlos}
+\author{\\Jon Kobeaga Urriolabeitia\\ José Vicente Mellado \\Universidad Rey Juan Carlos}
 
 \begin{document}
 
@@ -38,7 +40,10 @@
 \tableofcontents
 \newpage
 \section{Introducción}
-En este documento se explicarán los pasos, el código, las conclusiones y los problemas tenidos a la hora de hacer el análisis de sentimientos de los estados de Estados Unidos. Para llevar acabo dicho análisis se ha utilizado un fichero, llamado \textit{AFIN-en-165}, creado por Finn Årup Nielsen entre los años 2009 y 2015, que nos indica la felicidad que nos aporta cada palabra. La lista fue creada a mano y a cada palabra le corresponde un número entero entre [-5,5].
+En este documento se explicarán los pasos, el código, las conclusiones y los problemas tenidos a la hora de hacer el análisis de sentimientos de los estados de Estados Unidos. 
+
+Para llevar acabo dicho análisis se ha utilizado un fichero, llamado \textit{AFIN-en-165}, creado por Finn Årup Nielsen entre los años 2009 y 2015, que nos indica la felicidad que nos aporta cada palabra. La lista fue creada a mano y a cada palabra le corresponde un número entero entre [-5,5]. Un valor de 5 representa felicidad máxima y un valor de -5 representa tristeza absoluta.
+Dicho archivo se puede encontrar en el repositorio oficial del proyecto: \url{https://github.com/fnielsen/afinn/blob/master/afinn/data/AFINN-en-165.txt}.
 
 
 \section{Descripción del código}
@@ -52,39 +57,52 @@ En este apartado explicaremos el código utilizado para hacer el análisis de se
 \end{enumerate}
 
 \subsection{Obtención de los datos}
-Se ha levantado una insatncia de EC2 para obtener los datos. Los datos obtenidos se han guardado en formato JSON y para su obtención se han utilizado dos criterios diferentes. Por una parte, se ha descargado el 1\% de todos los tweets que se generan en el momento, sin tener en cuenta la localización ni el idioma. De esta forma se han descargado 1,7GB.\\
-Por otra parte, se ha hecho un filtrado para descargar los tweets, obteniendo sólo los tweets en inglés y de Estados Unidos. Para ello, al API de Twitter le hemos indicado el área que nos interesa, es decir, le hemos indicado que nos descargue únicamente los tweets generados entre Canadá y México. Quedan excluidos Alaska, las colonias y otras islas. EL estado se guarda en el campo ``usa\_state''. Además, como cada tweet tiene mucha información, sólo hemos guardado los campos que nos interesan, con el objetivo de que se ocupe el menor espacio posible. De esta forma se han descargado 300MB y 500.000 tweets.\\
+Se ha levantado una instancia de EC2 de Amazon Web Services para obtener los tweets. Los datos conseguidos se han guardado en formato JSON y para su obtención se han utilizado dos criterios diferentes:
+
+Por una parte, se ha descargado el 1\% de todos los tweets que se generan en el momento, sin tener en cuenta la localización ni el idioma. De esta forma se han descargado 1,7GB.\\
+Por otra parte, se ha hecho un filtrado para descargar los tweets, obteniendo sólo los tweets en inglés y de Estados Unidos. Para ello, hemos hecho uso de los métodos que ofrece la API de Twitter indicando, a través de distintos parámetros, el área que nos interesa de tal manera que se recuperan únicamente los tweets generados entre Canadá y México. 
+El estado se guarda en el campo ``usa\_state''. Además, como cada tweet tiene mucha información que no se iba a utilizar posteriormente, sólo hemos guardado los campos que nos interesan con el objetivo de que ocupar el menor espacio posible. De esta forma se han descargado 300MB y 500.000 tweets.\\
 En total, se ha trabajado con un fichero de 2GB y 829.576 tweets.
 
 \subsection{Análisis de Resultados}
 
-El análisis de resultados consiste en dos scripts, uno con las funciones principales y MapReduceJob y el otro con los métodos que serven para facilitar el trabajo de las funciones principales. El MRJob  consiste en dos pasos que explicaremos a continuación.
+El análisis de resultados consiste en dos scripts: \textit{mapreduce\_jobs/tweets.py} en el que está codificado en sí el objetivo de la práctica utilizando el modelo MapReduce y el otro, \textit{mapreduce\_jobs/word\_utils.py}, con métodos que sirven para facilitar el trabajo de las funciones principales. 
+
+Como era un requisito codificar una solución en Python siguiendo el modelo MapReduce, hemos optado por utilizar la librería MRJob explicada en clase. MRJob es un \textit{framework} que permite escribir y desplegar fácilmente \textit{jobs} MapReduce en diferentes plataformas (AWS, Google Cloud y clústeres Hadoop).
+
+MRJob ofrece una manera de dividir el objetivo global en subobjetivos llamados \textit{steps} (pasos). A continuación, se van a detallar los dos pasos de los que se compone nuestra solución.
 
 \subsubsection{Primer paso}
-En este primer paso se ejecutan el mapper, combiner y reducer. Para que se pueda ejecutar el mapper, se necesita tener un diccionario de las palabras y su correspondiente nivel de felicidad. Este diccionario se crea a través del archivo \texttt{AFINN-en-165.txt}. Además, si alguna palabra no está en el diccionario se ha considerado que la felicidad que aporta es nula. Ahora, explicaremos en qué consiste cada función:
+En este primer paso se ejecutan el mapper, el combiner y el reducer. Para que se pueda ejecutar el mapper, se necesita tener un diccionario de las palabras y su correspondiente nivel de felicidad. Este diccionario se crea a través del archivo \texttt{AFINN-en-165.txt}. Además, si alguna palabra no está en el diccionario se ha considerado que la felicidad que aporta es nula. Ahora, explicaremos en qué consiste cada función:
 
 \begin{itemize}
-\item \textbf{Mapper:} Se lee cada tweet y lo primero que se filtra es el idioma, nos quedamos con los tweets en inglés. Después dependiendo del criterio utilizado para descargar el tweet, hay diferentes campos que nos indican la localización. Si el tweet descargado ya ha sido filtrado, el campo que nos indica el estado es ``usa\_state''. Si el tweet no ha sido filtrado, hay dos campos que nos indican su localización: ``user''$\rightarrow$``location'' y ``place''$\rightarrow$ ``country''. Se ha utilizado la libreria \texttt{us} para obtener el estado partiendo de la información de los campos.\\
+\item \textbf{Mapper:} Se lee cada tweet y lo primero que se filtra es el idioma, nos quedamos con los tweets en inglés. Después, dependiendo del criterio utilizado para descargar el tweet, hay diferentes campos que nos indican la localización. Si el tweet descargado ya ha sido filtrado, el campo que nos indica el estado es ``usa\_state''. Si el tweet no ha sido filtrado, hay dos campos que nos indican su localización: ``user''$\rightarrow$``location'' y ``place''$\rightarrow$ ``country''. Se ha utilizado la libreria \texttt{us} para obtener el estado partiendo de la información de los campos.\\
 
 Después se ha obtenido el texto del tweet, que nos indica el campo ``text''. Debido a que cada palabra del fichero \textit{AFIN-en-165} está en minúscula, hemos pasado cada palabra a minúscula y solamente hemos cogido los caracteres del alfabeto inglés y ``\#'' que hace referencia a los hashtags.\\
 
-Una vez que se tienen las palabras del tweet, si es un hashtag la pareja \textit{(clave,valor)} que se envía es \textit{(hashtag,1)}. En caso de que no lo sea, se envía \textit{(clave,valor)=(estado,felicidad\_palabra)} 
+Una vez se tienen las palabras del tweet en ambos casos, tanto si la palabra es hashtag o no se emitirá un par \textit{(clave, valor)}. Si la palabra es un hashtag, ese par tendrá como clave el hashtag y como valor 1 (\textit{(\#hashtag, 1)}). En caso contrario, se emitirá un par que tendrá como clave el estado desde el que se escribió el tweet que contiene esa palabra y como valor la puntuación de sentimiento de esa palabra (\textit{(estado, valoraciónDeLaPalabra)}).
 
-\item \textbf{Combiner:} Este paso se utiliza para simplificar el trabajo en el reducer. Suma el valor de los hashtags y los estados y los envía como \textit{(hashtag o estado, valor)}.
+\item \textbf{Combiner:} Este paso se utiliza para simplificar el trabajo en el reducer. Suma el valor de los hashtags y los estados y los envía como \textit{(\#hashtag o estado, valor)}.
 
-\item \textbf{Reducer:} Suma el valor de los hashtags y de los estados, pero en este caso, el valor que se envía es una tupla formada por \textit{(valor,hashtag)} o \textit{(valor,estado)}. Esta técnica se utiliza para poder paralelizar el segundo paso del MRJob.
+\item \textbf{Reducer:} Suma el valor de los hashtags y de los estados resultando una lista de pares clave-valor. Para cada tupla clave-valor se diferencia si se trata de un hashtag o de un estado. Si se trata de un hashtag la tupla \textit{(valor, \#hashtag)} se guarda de la siguiente manera: (\textit{("hashtag", (valor, \#hashtag))}).Si se trata de un estado se almacena así (\textit{("state", (valoraciónDeLaPalabra, estado))}).
+
+Hemos decidido separar los resultados por una nueva clave en función de si es hashtag o estado porque esa colección de claves-valor la usaremos posteriormente en un reducer. Si los resultados están agrupados por claves, al utilizarlo como entrada en un reducer, el procesamiento de los mismos se podrá paralelizar porque el trabajo a realizar sobre cada par es independiente de otros con distinta clave.
 
 \subsubsection{Segundo paso}
 
-En este segundo paso, se obtienen  la felicidad de cada estado, el estado más feliz y los diez hashtags más utilizados. Para ello, solamente se utiliza el reducer.\\
+En este segundo paso, se obtienen  la felicidad de cada estado, el estado más feliz y los diez hashtags más utilizados. Todo esto se realiza en un único reducer.\\
 
 Se crean dos diccionarios por separado, uno con todos los estados y su respectiva felicidad y otro con todos los hashtags y el número de veces que se han utilizado. Después se ordenan los diccionarios y se coge el estado más feliz y los diez hashtags más comunes.
+
+Por pantalla se muestra primero el top 10 de hashtags más usados, después todos los estados de los Estados Unidos de América con su valoración de felicidad y finalmente el estado que mayor valoración ha obtenido (el más feliz).
+
+En el archivo \textit{report/output.txt} se puede ver la salida del programa con los datos que hemos usado.
 \end{itemize}
 
 \subsection{Representación de los Datos}
 Los resultados obtenidos se han representado en un mapa de colores. Cada estado se ha pintado de un color dependiendo de su nivel de felicidad. Se han utilizado \texttt{ShapeFiles}, para dibujar los estados con sus respectivas fronteras. Para representar los resultados, se ha utilizado la librería \texttt{Basemap}.\\
 
-Se ha escalado la felicidad de cada estado para que a la hora de pintar no haya diferencias grandes. se han escalado de la siguiente forma:
+Se ha escalado la felicidad de cada estado para que a la hora de pintar no haya diferencias grandes. La fórmula a utilizar para el escalado ha sido la siguiente:
 $$hap_{estado}=1-\displaystyle \sqrt{\dfrac{hap-hap_{min}}{hap_{max}-hap_{min}}}$$
 
 donde \textit{hap} indica la felicidad del estado y $hap_{max}\ \text{,}\ hap_{min}$ son el valor máximo y mínimo de felicidad.
@@ -95,6 +113,8 @@ El estado más feliz se pinta de azul y el menos feliz de un color amarillo-verd
 %\includegraphics[scale=1]{happiness.png}
 %\caption{Gráfico que representa la felicidad de cada estado.}
 %\end{figure}
+
+El script encargado de la representación es \textit{report/paint\_states.py}. 
 
 \section{Diferentes Formas de Ejecución}
 
@@ -107,15 +127,20 @@ Se ha ejecutado de cinco formas diferentes:
 \item EMR : \texttt{python \_\_init\_\_.py -r emr s3://urjc.datascience.jon/tweets\\/tweets1.json -c ./tweets\_mrjob.conf \\--output-dir=s3://urjc.datascience.jon/tweets/Resultados}
 \end{enumerate}
 
+En el caso de EMR, la opción -c permite elegir un archivo de configuración que usará MRJob internamente para desplegar la aplicación en Elastic MapReduce. En el archivo \textit{tweets\_mrjob.conf} se encuentra la configuración necesaria para que nuestra solución propuesta funcione correctamente.
+
 \section{Evaluación de Escalabilidad y Elasticidad}
 
 \section{Comentarios Personales}
 
-Uno de los problemas principales que hemos tenido ha sido en la obtención de datos. Además de que de todos los tweets descargados muchos no eran útiles para nuestro análisis, porque no estaban en inglés ni eran de Estados Unidos, muchos de los descargados carecían de localización y algunos también se descargaron erróneamente, por ejemplo, algunos tweets se descargaron sin los ``:'' que identifican a cada campo. Por tanto, pensamos que es mejor hacer el filtrado antes descargar los tweets, para así, tener únicamente los tweets necesarios y ocupar menos espacio.\\
+En cuanto a aspectos técnicos, hemos usado la librería \textit{ujson} que es más rápida que la librería \textit{json} que Python contiene por defecto. Hemos intentado seguir al máximo la guía de estilos PEP 8 y en la medida de lo posible también la guía PEP 20, además de seguir una estructura recomendada para proyectos Python y documentar la mayoría de métodos usando docstrings.
+Como herramienta de control de versiones se ha usado Git y este proyecto se encuentra en un repositorio de GitHub en el siguiente enlace: \url{https://github.com/jvicentem/tweets-sentiment-analysis}.
 
-Otro de los problemas que hemos tenido, ha sido con el nombre de los bucket, que para ejecutar el MRJob no pueden tener ningún ``.'' en el nombre.\\
+Uno de los problemas principales que hemos tenido ha sido en la obtención de datos. Además de que de todos los tweets descargados muchos no eran útiles para nuestro análisis, porque no estaban en inglés ni eran de Estados Unidos, otros carecían de localización o se descargaron erróneamente (por ejemplo, algunos tweets se descargaron sin los ``:'' que identifican a cada campo). Por tanto, pensamos que es mejor hacer el filtrado antes descargar los tweets (teniendo en cuenta que sabemos lo que necesitamos y lo que vamos a hacer con los datos), para así, tener únicamente los tweets necesarios y ocupar menos espacio.\\
 
-Por otra parte, como una única palabra, por sí sola, puede ser un poco ambigua, una de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras.\\
+Otro de los problemas que hemos tenido, ha sido con el nombre de los bucket, que para ejecutar el MRJob no pueden tener ningún ``.'' en el nombre. Afortunadamente hemos solventado esto añadiendo un par de líneas justo después de la importación de bibliotecas en \textit{tweets.py}\\
+
+Por otra parte, como una única palabra, por sí sola, puede ser un poco ambigua, una de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
 
 
 \end{document}

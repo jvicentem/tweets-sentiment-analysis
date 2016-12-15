@@ -43,11 +43,14 @@ def find_usa_state(text):
     matches = re.findall('([\w+\s]+)', text)
 
     if len(matches) is 2:
-        # e.g.: Texas, USA
+        # e.g.: Texas, USA or TX, USA
         if matches[1] == 'USA':
-            return matches[0]
+            # Check if that word is actually a state
+            return str(us.states.lookup(matches[0]))
         # e.g.: Austin, TX
         else:
             # Find state full name from abbreviation:
             return str(us.states.lookup(matches[1][1:]))
+    else:
+        return 'None'
 

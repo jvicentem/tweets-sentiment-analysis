@@ -1,0 +1,70 @@
+"#job"	126810
+"#hiring"	108765
+"#careerarc"	55246
+"#jobs"	26046
+"#hospitality"	16258
+"#nursing"	11545
+"#retail"	11123
+"#veterans"	9953
+"#healthcare"	7643
+"#sales"	6410
+"Guam"	-2
+"American Samoa"	0
+"Virgin Islands"	0
+"Northern Mariana Islands"	1
+"Idaho"	1003
+"Massachusetts"	10305
+"Maine"	1070
+"Virginia"	10994
+"Michigan"	11160
+"North Dakota"	12
+"Pennsylvania"	12267
+"Georgia"	12334
+"Rhode Island"	1238
+"Oregon"	1272
+"North Carolina"	13300
+"New Jersey"	13431
+"Ohio"	13682
+"Illinois"	13790
+"Puerto Rico"	16
+"New Hampshire"	1611
+"West Virginia"	1670
+"Mississippi"	1739
+"New Mexico"	1856
+"Minnesota"	1868
+"Alaska"	2
+"Montana"	220
+"Nebraska"	2386
+"Utah"	2544
+"New York"	27080
+"Washington"	284
+"Texas"	29333
+"Philippine Islands"	3
+"Florida"	30288
+"Washington, D.C."	3321
+"Kansas"	3392
+"Iowa"	3402
+"Alabama"	3609
+"Louisiana"	3667
+"Connecticut"	3867
+"Arkansas"	3973
+"Oklahoma"	4028
+"District of Columbia"	45
+"Wyoming"	455
+"South Dakota"	482
+"California"	54924
+"Hawaii"	564
+"Nevada"	5689
+"Wisconsin"	5940
+"South Carolina"	6514
+"Kentucky"	6549
+"Vermont"	663
+"Colorado"	6632
+"Delaware"	694
+"Indiana"	7390
+"Missouri"	7489
+"Maryland"	7539
+"Tennessee"	7887
+"Arizona"	8302
+"California"	54924
+

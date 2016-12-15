@@ -6,6 +6,7 @@ from operator import itemgetter
 import word_utils
 import ssl
 
+#The following two lines fix S3 bucket name problems
 if hasattr(ssl, '_create_unverified_context'):
     ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -51,7 +52,9 @@ class Tweets(MRJob):
             return None
 
         if Tweets._field_in_dict(tweet_object, 'lang') and tweet_object['lang'] == 'en':
-            if 'usa_state' not in tweet_object:
+            if 'usa_state' in tweet_object:
+                return tweet_object
+            else:
                 place_exists = Tweets._field_in_dict(tweet_object, 'place')
                 country_code_exists = Tweets._field_in_dict(tweet_object['place'], 'country_code')
 
@@ -67,12 +70,13 @@ class Tweets(MRJob):
 
                 possible_state = word_utils.find_usa_state(place_full_name)
 
-                if possible_state is not None:
-                    tweet_object['usa_state'] = word_utils.find_usa_state(place_full_name)
+                if possible_state != 'None':
+                    tweet_object['usa_state'] = possible_state
+                    return tweet_object
                 else:
                     return None
-
-            return tweet_object
+        else:
+            return None
 
     def mapper(self, _, line):
         tweet_object = Tweets._filter_tweets(line)
@@ -117,18 +121,18 @@ class Tweets(MRJob):
             hashtags.sort(key=itemgetter(0), reverse=True)
 
             for hashtag in hashtags[:10]:
-                yield(hashtag[1],hashtag[0])
+                yield(hashtag[1], hashtag[0])
         elif state_or_hashtag_string_key == 'state':
             states = []
 
             for tup in tuples_list:
                 if tup is not None and not word_utils.is_hashtag(tup[1]):
                     states.append(tup)
-                    yield(tup[1],tup[0])
+                    yield(tup[1], tup[0])
 
             states.sort(key=itemgetter(0), reverse=True)
 
-            yield(states[0][1],states[0][0])
+            yield(states[0][1], states[0][0])
 
     def steps(self):
         return [MRStep(mapper_init=self.mapper_init,
