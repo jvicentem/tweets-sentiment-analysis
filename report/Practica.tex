@@ -100,7 +100,8 @@ En el archivo \textit{report/output.txt} se puede ver la salida del programa con
 \end{itemize}
 
 \subsection{Representación de los Datos}
-Los resultados obtenidos se han representado en un mapa de colores. Cada estado se ha pintado de un color dependiendo de su nivel de felicidad. Se han utilizado \texttt{ShapeFiles}, para dibujar los estados con sus respectivas fronteras. Para representar los resultados, se ha utilizado la librería \texttt{Basemap}.\\
+Los resultados obtenidos se han representado en un mapa de colores. El script para pintar el coloreado cada estado se ha obtenido del Github de Matplotlib 	\url{https://github.com/matplotlib/basemap/blob/master/examples/fillstates.py}.\\
+Cada estado se ha pintado de un color dependiendo de su nivel de felicidad. Se han utilizado \texttt{ShapeFiles}, para dibujar los estados con sus respectivas fronteras. Para representar los resultados, se ha utilizado la librería \texttt{Basemap}.\\
 
 Se ha escalado la felicidad de cada estado para que a la hora de pintar no haya diferencias grandes. La fórmula a utilizar para el escalado ha sido la siguiente:
 $$hap_{estado}=1-\displaystyle \sqrt{\dfrac{hap-hap_{min}}{hap_{max}-hap_{min}}}$$
@@ -132,14 +133,14 @@ En el caso de EMR, la opción -c permite elegir un archivo de configuración que
 
 \section{Evaluación de Escalabilidad y Elasticidad}
 
-La ejecución en local y en un cluster de Hadoop pero en local, el tiempo  utilizado no super los dos minutos y medio. En cambio, para ejecutarlo en EMR el tiempo utilizado es de 5 minutos y medio con 5 cores, pero, a este tiempo también hay que añadirle los tiempos en levantar los cores y desmontarlos(se dice así?¿?¿) que en total es alrededor de 45 minutos.\\
+La ejecución en local y en un cluster de Hadoop pero en local, el tiempo  utilizado no super los dos minutos y medio. En cambio, para ejecutarlo en EMR el tiempo utilizado es de 5 minutos y medio con 5 procesadores, pero, a este tiempo también hay que añadirle los tiempos en levantar los procesadores y desmontarlos que en total es alrededor de 45 minutos. También hay que decir, que se ha probado con cantidades diferentes de procesadores: Se han echo dos pruebas, una con tres y la otra con cinco. El tiempo de ejecución con tres ha sido cuatro veces superior.\\
 
-También hay que decir, que se ha probado con cantidades diferentes de cores: Se han echo dos pruebas, una con tres y la otra con cinco. El tiempo de ejecución con tres ha sido cuatro veces superior-
+Estos resultados coinciden con la ley de Gustafson, que muchas veces la paralelización no se utiliza para ir más rápido sino para ejecutar tareas de mayor tamaño. Es decir, en nuestro caso, un fichero de 2 GB sin paralelizar se ha ejecutado en dos minutos y medio, y paralelizando en cinco minutos y medio, pero, si tuviéramos un fichero lo suficientemente grande con la paralelización el tiempo de ejecución sería menor. Además, si pusiéramos más procesadores el tiempo de ejecución se reduciría, pero únicamente el del mapper y el del combiner, porque se dividiría más el trabajo. En cambio, el tiempo empleado en el reducer seguiría siendo el mismo, porque, al tener únicamente dos claves diferentes, no es posible dividir más el trabajo.
 
 \section{Comentarios Personales}
 
 En cuanto a aspectos técnicos, hemos usado la librería \textit{ujson} que es más rápida que la librería \textit{json} que Python contiene por defecto. Hemos intentado seguir al máximo la guía de estilos PEP 8 y en la medida de lo posible también la guía PEP 20, además de seguir una estructura recomendada para proyectos Python y documentar la mayoría de métodos usando docstrings.
-Como herramienta de control de versiones se ha usado Git y este proyecto se encuentra en un repositorio de GitHub en el siguiente enlace: \url{https://github.com/jvicentem/tweets-sentiment-analysis}.
+Como herramienta de control de versiones se ha usado Git y este proyecto se encuentra en un repositorio de GitHub en el siguiente enlace: \url{https://github.com/jvicentem/tweets-sentiment-analysis}.\\
 
 Uno de los problemas principales que hemos tenido ha sido en la obtención de datos. Además de que de todos los tweets descargados muchos no eran útiles para nuestro análisis, porque no estaban en inglés ni eran de Estados Unidos, otros carecían de localización o se descargaron erróneamente (por ejemplo, algunos tweets se descargaron sin los ``:'' que identifican a cada campo). Por tanto, pensamos que es mejor hacer el filtrado antes descargar los tweets (teniendo en cuenta que sabemos lo que necesitamos y lo que vamos a hacer con los datos), para así, tener únicamente los tweets necesarios y ocupar menos espacio.\\
 
@@ -147,7 +148,7 @@ Otro de los problemas que hemos tenido, ha sido con el nombre de los bucket, que
 
 
 Por otra parte, para un análisis más correcto, se debería de recoger un número parecido de tweets por estado, porque, viendo los resultados obtenidos, cuando mayor es el número de tweets mayor es la felicidad, por lo que no se refleja bien la felicidad de cada estado.\\
-Además, como una única palabra, por sí sola, puede ser un poco ambigua, otraº de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
+Además, como una única palabra, por sí sola, puede ser un poco ambigua, otra de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
 
 
 \end{document}
