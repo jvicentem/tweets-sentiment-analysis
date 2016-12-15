@@ -106,23 +106,24 @@ Se ha escalado la felicidad de cada estado para que a la hora de pintar no haya 
 $$hap_{estado}=1-\displaystyle \sqrt{\dfrac{hap-hap_{min}}{hap_{max}-hap_{min}}}$$
 
 donde \textit{hap} indica la felicidad del estado y $hap_{max}\ \text{,}\ hap_{min}$ son el valor máximo y mínimo de felicidad.
-El estado más feliz se pinta de azul y el menos feliz de un color amarillo-verdoso.
+El estado más feliz se pinta de azul y el menos feliz de un color amarillo-verdoso. El script encargado de la representación es \textit{report/paint\_states.py}. 
 
-%\begin{figure}[h]
-%\centering
-%\includegraphics[scale=1]{happiness.png}
-%\caption{Gráfico que representa la felicidad de cada estado.}
-%\end{figure}
 
-El script encargado de la representación es \textit{report/paint\_states.py}. 
+\begin{figure}[h]
+\centering
+\includegraphics[scale=1]{happiness.png}
+\caption{Gráfico que representa la felicidad de cada estado.}
+\end{figure}
+
+Con los datos que tenemos el estado más feliz es claramente California, pero Texas, Florida y New York, también son estados muy felices. En cambio, Dakota del Norte, Dakota de Sur, Montana y Vermont son los estados más tristes según los datos que tenemos. Los estados más felices coinciden con los estados más poblados  y los menos felices con los menos poblados. Este resultado puede ser a causa del número de tweets recogidos en cada estado, es decir, cuando mayor es la población mayor es el número de tweets y por tanto, mayor es la felicidad.
 
 \section{Diferentes Formas de Ejecución}
 
 Se ha ejecutado de cinco formas diferentes:
 \begin{enumerate}
-\item Local: \texttt{python \_\_init\_\_.py ../assets/tweets.json \\--file ../assets/AFINN-en-165.txt}
-\item Horton local: \texttt{python MRJob.py -r inline tweets.json111}
-\item Horton cluster Hadoop: \texttt{python MRJob.py -r local tweets.json111}
+\item Local: \texttt{python \_\_init\_\_.py ../assets/tweets.json \\--file ../assets/AFINN-en-165.txt} Tiempo: 1min 30 seg
+\item Horton local: \texttt{python \_\_init\_\_.py -r inline ../assets/tweets.json  --file ../assets/AFINN-en-165.txt } Tiempo: 2mins 15 seg
+\item Horton cluster Hadoop: \texttt{python \_\_init\_\_.py -r local ../assets/tweets.json  \\ --file ../assets/AFINN-en-165.txt} Tiempo: 2mins 15 seg
 \item HDFS Hadoop: \texttt{python MRJob.py -r hadoop --hadoop-streaming-jar \\ hdfs:///tweets/tweets.json111  /usr/hdp/2.5.0.0-1245/hadoop-\\mapreduce/hadoop-streaming.jar}
 \item EMR : \texttt{python \_\_init\_\_.py -r emr s3://urjc.datascience.jon/tweets\\/tweets1.json -c ./tweets\_mrjob.conf \\--output-dir=s3://urjc.datascience.jon/tweets/Resultados}
 \end{enumerate}
@@ -130,6 +131,10 @@ Se ha ejecutado de cinco formas diferentes:
 En el caso de EMR, la opción -c permite elegir un archivo de configuración que usará MRJob internamente para desplegar la aplicación en Elastic MapReduce. En el archivo \textit{tweets\_mrjob.conf} se encuentra la configuración necesaria para que nuestra solución propuesta funcione correctamente.
 
 \section{Evaluación de Escalabilidad y Elasticidad}
+
+La ejecución en local y en un cluster de Hadoop pero en local, el tiempo  utilizado no super los dos minutos y medio. En cambio, para ejecutarlo en EMR el tiempo utilizado es de 5 minutos y medio con 5 cores, pero, a este tiempo también hay que añadirle los tiempos en levantar los cores y desmontarlos(se dice así?¿?¿) que en total es alrededor de 45 minutos.\\
+
+También hay que decir, que se ha probado con cantidades diferentes de cores: Se han echo dos pruebas, una con tres y la otra con cinco. El tiempo de ejecución con tres ha sido cuatro veces superior-
 
 \section{Comentarios Personales}
 
@@ -140,7 +145,9 @@ Uno de los problemas principales que hemos tenido ha sido en la obtención de da
 
 Otro de los problemas que hemos tenido, ha sido con el nombre de los bucket, que para ejecutar el MRJob no pueden tener ningún ``.'' en el nombre. Afortunadamente hemos solventado esto añadiendo un par de líneas justo después de la importación de bibliotecas en \textit{tweets.py}\\
 
-Por otra parte, como una única palabra, por sí sola, puede ser un poco ambigua, una de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
+
+Por otra parte, para un análisis más correcto, se debería de recoger un número parecido de tweets por estado, porque, viendo los resultados obtenidos, cuando mayor es el número de tweets mayor es la felicidad, por lo que no se refleja bien la felicidad de cada estado.\\
+Además, como una única palabra, por sí sola, puede ser un poco ambigua, otraº de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
 
 
 \end{document}
