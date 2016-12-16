@@ -30,7 +30,7 @@
 \usepackage{hyperref}
 
 
-\title{Sistemas Distribuidos de Procesamiento de Datos\\Práctica Hadoop}
+\title{Sistemas Distribuidos de Procesamiento de Datos\\Práctica Hadoop MapReduce}
 \author{\\Jon Kobeaga Urriolabeitia\\ José Vicente Mellado \\Universidad Rey Juan Carlos}
 
 \begin{document}
@@ -99,6 +99,8 @@ Por pantalla se muestra primero el top 10 de hashtags más usados, después todo
 En el archivo \textit{report/output.txt} se puede ver la salida del programa con los datos que hemos usado.
 \end{itemize}
 
+Al final de este documento, en el Anexo, se encuentra un diagrama con el flujo de datos entre los diferentes steps (Figura 3).
+
 \subsection{Representación de los Datos}
 Los resultados obtenidos se han representado en un mapa de colores. El script para pintar el coloreado cada estado se ha obtenido del Github de Matplotlib 	\url{https://github.com/matplotlib/basemap/blob/master/examples/fillstates.py}.\\
 Cada estado se ha pintado de un color dependiendo de su nivel de felicidad. Se han utilizado \texttt{ShapeFiles}, para dibujar los estados con sus respectivas fronteras. Para representar los resultados, se ha utilizado la librería \texttt{Basemap}.\\
@@ -133,9 +135,19 @@ En el caso de EMR, la opción -c permite elegir un archivo de configuración que
 
 \section{Evaluación de Escalabilidad y Elasticidad}
 
-La ejecución en local y en un cluster de Hadoop pero en local, el tiempo  utilizado no super los dos minutos y medio. En cambio, para ejecutarlo en EMR el tiempo utilizado es de 5 minutos y medio con 5 procesadores, pero, a este tiempo también hay que añadirle los tiempos en levantar los procesadores y desmontarlos que en total es alrededor de 45 minutos. También hay que decir, que se ha probado con cantidades diferentes de procesadores: Se han echo dos pruebas, una con tres y la otra con cinco. El tiempo de ejecución con tres ha sido cuatro veces superior.\\
+Cuando se ejecuta el programa en un cluster de Hadoop simulado en nuestro ordenador local, el tiempo  utilizado no supera los dos minutos y medio. En cambio, para ejecutarlo en EMR el tiempo utilizado es de 5 minutos y medio con 5 procesadores. A este tiempo hay que añadirle la demora que supone levantar las distincias instancias para el clúster. 
 
-Estos resultados coinciden con la ley de Gustafson, que muchas veces la paralelización no se utiliza para ir más rápido sino para ejecutar tareas de mayor tamaño. Es decir, en nuestro caso, un fichero de 2 GB sin paralelizar se ha ejecutado en dos minutos y medio, y paralelizando en cinco minutos y medio, pero, si tuviéramos un fichero lo suficientemente grande con la paralelización el tiempo de ejecución sería menor. Además, si pusiéramos más procesadores el tiempo de ejecución se reduciría, pero únicamente el del mapper y el del combiner, porque se dividiría más el trabajo. En cambio, el tiempo empleado en el reducer seguiría siendo el mismo, porque, al tener únicamente dos claves diferentes, no es posible dividir más el trabajo.
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{plot.png}
+\caption{Time (s) vs Number of instances con un fichero de 1.7GB, instancias de tipo m1.medium}
+\end{figure}
+
+En el gráfico se pueden apreciar las consecuencias de la Ley de Amdahl ya que cuando se realiza la ejecución con 7 instancias el decremento de tiempo es muy pequeño en comparación con ejecuciones anteriores. 
+
+Sin embargo, hay que tener en cuenta la ley de Gustafson, ya que muchas veces la paralelización no se utiliza para realizar una tarea más rápido, sino para abordar problemas de mayor tamaño. Es decir, en nuestro caso, un fichero de 1.7GB sin paralelizar se ha ejecutado en dos minutos y medio, y paralelizando en cinco minutos y medio, pero, si tuviéramos un fichero lo suficientemente grande con la paralelización el tiempo de ejecución sería menor. Además, si pusiéramos más procesadores el tiempo de ejecución se reduciría, pero únicamente el del mapper y el del combiner, porque se dividiría más el trabajo. En cambio, el tiempo empleado en el reducer seguiría siendo el mismo, porque, al tener únicamente dos claves diferentes, no es posible dividir más el trabajo.
+
+La solución (modelo MapReduce) que estamos aplicando al problema puede tardar más que en nuestro computador doméstico, pero a cambio nos proporciona una fácil escalabilidad en caso de que el problema se hiciera más grande y necesitara más recursos.
 
 \section{Comentarios Personales}
 
@@ -150,5 +162,10 @@ Otro de los problemas que hemos tenido, ha sido con el nombre de los bucket, que
 Por otra parte, para un análisis más correcto, se debería de recoger un número parecido de tweets por estado, porque, viendo los resultados obtenidos, cuando mayor es el número de tweets mayor es la felicidad, por lo que no se refleja bien la felicidad de cada estado.\\
 Además, como una única palabra, por sí sola, puede ser un poco ambigua, otra de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
 
+\section{Anexo}
+\begin{figure}[htp]
+\makebox[\textwidth][c]{\includegraphics[width=1.55\textwidth]{MapReduceFlow.png}}
+\caption{Flujo entre los diferentes steps}
+\end{figure}
 
 \end{document}
