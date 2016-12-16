@@ -64,6 +64,7 @@ Por otra parte, se ha hecho un filtrado para descargar los tweets, obteniendo s�
 El estado se guarda en el campo ``usa\_state''. Además, como cada tweet tiene mucha información que no se iba a utilizar posteriormente, sólo hemos guardado los campos que nos interesan con el objetivo de que ocupar el menor espacio posible. De esta forma se han descargado 300MB y 500.000 tweets.\\
 En total, se ha trabajado con un fichero de 2GB y 829.576 tweets.
 
+
 \subsection{Análisis de Resultados}
 
 El análisis de resultados consiste en dos scripts: \textit{mapreduce\_jobs/tweets.py} en el que está codificado en sí el objetivo de la práctica utilizando el modelo MapReduce y el otro, \textit{mapreduce\_jobs/word\_utils.py}, con métodos que sirven para facilitar el trabajo de las funciones principales. 
@@ -99,7 +100,7 @@ Por pantalla se muestra primero el top 10 de hashtags más usados, después todo
 En el archivo \textit{report/output.txt} se puede ver la salida del programa con los datos que hemos usado.
 \end{itemize}
 
-Al final de este documento, en el Anexo, se encuentra un diagrama con el flujo de datos entre los diferentes steps (Figura 3).
+Al final de este documento, en el Anexo, se encuentra un diagrama con el flujo de datos entre los diferentes steps, Figura \ref{diagrama}.
 
 \subsection{Representación de los Datos}
 Los resultados obtenidos se han representado en un mapa de colores. El script para pintar el coloreado cada estado se ha obtenido del Github de Matplotlib 	\url{https://github.com/matplotlib/basemap/blob/master/examples/fillstates.py}.\\
@@ -116,9 +117,10 @@ El estado más feliz se pinta de azul y el menos feliz de un color amarillo-verd
 \centering
 \includegraphics[scale=1]{happiness.png}
 \caption{Gráfico que representa la felicidad de cada estado.}
+\label{hap-stat}
 \end{figure}
 
-Con los datos que tenemos el estado más feliz es claramente California, pero Texas, Florida y New York, también son estados muy felices. En cambio, Dakota del Norte, Dakota de Sur, Montana y Vermont son los estados más tristes según los datos que tenemos. Los estados más felices coinciden con los estados más poblados  y los menos felices con los menos poblados. Este resultado puede ser a causa del número de tweets recogidos en cada estado, es decir, cuando mayor es la población mayor es el número de tweets y por tanto, mayor es la felicidad.
+Como se ve en la Figura \ref{hap-stat}, con los datos que tenemos, el estado más feliz es claramente California, pero Texas, Florida y New York, también son estados muy felices. En cambio, Dakota del Norte, Dakota de Sur, Montana y Vermont son los estados más tristes según los datos que tenemos. Los estados más felices coinciden con los estados más poblados  y los menos felices con los menos poblados. Este resultado puede ser a causa del número de tweets recogidos en cada estado, es decir, cuando mayor es la población mayor es el número de tweets y por tanto, mayor es la felicidad.
 
 \section{Diferentes Formas de Ejecución}
 
@@ -127,7 +129,7 @@ Se ha ejecutado de cinco formas diferentes:
 \item Local: \texttt{python \_\_init\_\_.py ../assets/tweets.json \\--file ../assets/AFINN-en-165.txt} Tiempo: 1min 30 seg
 \item Horton local: \texttt{python \_\_init\_\_.py -r inline ../assets/tweets.json  --file ../assets/AFINN-en-165.txt } Tiempo: 2mins 15 seg
 \item Horton cluster Hadoop: \texttt{python \_\_init\_\_.py -r local ../assets/tweets.json  \\ --file ../assets/AFINN-en-165.txt} Tiempo: 2mins 15 seg
-\item HDFS Hadoop: \texttt{python MRJob.py -r hadoop --hadoop-streaming-jar \\ hdfs:///tweets/tweets.json111  /usr/hdp/2.5.0.0-1245/hadoop-\\mapreduce/hadoop-streaming.jar}
+\item HDFS Hadoop: \texttt{python \_\_init\_\_.py -r hadoop \\ hdfs:///tweets/tweets.json1 --hadoop-streaming-jar /usr/hdp/2.5.0.0-1245/hadoop-mapreduce/hadoop-streaming.jar}
 \item EMR : \texttt{python \_\_init\_\_.py -r emr s3://urjc.datascience.jon/tweets\\/tweets1.json -c ./tweets\_mrjob.conf \\--output-dir=s3://urjc.datascience.jon/tweets/Resultados}
 \end{enumerate}
 
@@ -141,11 +143,12 @@ Cuando se ejecuta el programa en un cluster de Hadoop simulado en nuestro ordena
 \centering
 \includegraphics[scale=0.5]{plot.png}
 \caption{Time (s) vs Number of instances con un fichero de 1.7GB, instancias de tipo m1.medium}
+\label{tiempos}
 \end{figure}
 
-En el gráfico se pueden apreciar las consecuencias de la Ley de Amdahl ya que cuando se realiza la ejecución con 7 instancias el decremento de tiempo es muy pequeño en comparación con ejecuciones anteriores. 
+En la Figura \ref{tiempos} se pueden apreciar las consecuencias de la Ley de Amdahl ya que cuando se realiza la ejecución con 7 instancias el disminución de tiempo es muy pequeño en comparación con ejecuciones anteriores. Esto sucede porque a partir de siete procesadores ha llegado el momento en el que no se puede paralelizar más. Si quisiéramos que fuera más efectivo tendríamos que explotar más el algoritmo.\\
 
-Sin embargo, hay que tener en cuenta la ley de Gustafson, ya que muchas veces la paralelización no se utiliza para realizar una tarea más rápido, sino para abordar problemas de mayor tamaño. Es decir, en nuestro caso, un fichero de 1.7GB sin paralelizar se ha ejecutado en dos minutos y medio, y paralelizando en cinco minutos y medio, pero, si tuviéramos un fichero lo suficientemente grande con la paralelización el tiempo de ejecución sería menor. Además, si pusiéramos más procesadores el tiempo de ejecución se reduciría, pero únicamente el del mapper y el del combiner, porque se dividiría más el trabajo. En cambio, el tiempo empleado en el reducer seguiría siendo el mismo, porque, al tener únicamente dos claves diferentes, no es posible dividir más el trabajo.
+Sin embargo, hay que tener en cuenta la ley de Gustafson, ya que muchas veces la paralelización no se utiliza para realizar una tarea más rápido, sino para abordar problemas de mayor tamaño. Es decir, en nuestro caso, un fichero de 1.7GB sin paralelizar se ha ejecutado en dos minutos y medio, y paralelizando en cinco minutos y medio, pero, si tuviéramos un fichero lo suficientemente grande, con la paralelización el tiempo de ejecución sería menor. Además, si pusiéramos más procesadores el tiempo de ejecución se reduciría, pero únicamente el del mapper y el del combiner, porque se dividiría más el trabajo. En cambio, el tiempo empleado en el reducer seguiría siendo el mismo, porque, al tener únicamente dos claves diferentes, no es posible dividir más el trabajo.\\
 
 La solución (modelo MapReduce) que estamos aplicando al problema puede tardar más que en nuestro computador doméstico, pero a cambio nos proporciona una fácil escalabilidad en caso de que el problema se hiciera más grande y necesitara más recursos.
 
@@ -162,10 +165,14 @@ Otro de los problemas que hemos tenido, ha sido con el nombre de los bucket, que
 Por otra parte, para un análisis más correcto, se debería de recoger un número parecido de tweets por estado, porque, viendo los resultados obtenidos, cuando mayor es el número de tweets mayor es la felicidad, por lo que no se refleja bien la felicidad de cada estado.\\
 Además, como una única palabra, por sí sola, puede ser un poco ambigua, otra de las mejoras que se pueden hacer es analizar tuplas y tripletas de palabras para tener en cuenta el contexto.\\
 
+\newpage
 \section{Anexo}
 \begin{figure}[htp]
+
 \makebox[\textwidth][c]{\includegraphics[width=1.55\textwidth]{MapReduceFlow.png}}
 \caption{Flujo entre los diferentes steps}
+\label{diagrama}
 \end{figure}
+
 
 \end{document}
